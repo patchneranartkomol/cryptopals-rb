@@ -1,67 +1,59 @@
 ## Implementation of Break repeating-key XOR
 # https://cryptopals.com/sets/1/challenges/6
+# frozen_string_literal: true
 
-require "base64"
+require 'base64'
 
-def edit_distance(s, t)
+def edit_distance(sta, stb)
   dist = 0
-  sa = s.split('')
-  ta = t.split('')
-  sa.zip(ta).map do |x, y|
+  a = sta.split('')
+  b = stb.split('')
+  a.zip(b).map do |x, y|
     dist += diff_bits(x.ord, y.ord)
   end
-  return dist
+  dist
 end
 
-def diff_bits(x, y)
+def diff_bits(x_byte, y_byte)
   d = 0
-  while x > 0 || y > 0
-    if (x & 1) != (y & 1)
-      d += 1
-    end
-    x >>= 1
-    y >>= 1
+  while x_byte.positive? || y_byte.positive?
+    d += 1 if (x_byte & 1) != (y_byte & 1)
+    x_byte >>= 1
+    y_byte >>= 1
   end
-  return d
+  d
 end
 
 def transpose_blocks(blocks, keysize)
   transposed = []
   (0...keysize).each do |i|
-    tblock = ""
+    tblock = ''
     blocks.each do |b|
-      if i >= b.length
-        break
-      end
+      break if i >= b.length
+
       tblock << b[i]
     end
     transposed.push(tblock)
   end
-  return transposed
+  transposed
 end
 
-def check_xor(b)
+def check_xor(bytes)
   max_freq = 0
-  key_char = ""
-  (' '..'z').each do |char| 
-    decoded = b.map { |x| (x ^ char.ord).chr }
+  key_char = ''
+  (' '..'z').each do |char|
+    decoded = bytes.map { |x| (x ^ char.ord).chr }
     count = 0
-    decoded.each do |c|
-      # Check most common English letters. Matches better than [[:alpha]] chars.
-      if "ETAOIN SHRDLUWetaoinshrdluw".include? c
-        count += 1
-      end
-    end
-    if count > max_freq
-        max_freq = count
-        key_char = char
-    end
+    # Check most common English letters. Matches better than [[:alpha]] chars.
+    decoded.each { |c| count += 1 if 'ETAOIN SHRDLUWetaoinshrdluw'.include? c }
+    max_freq = count if count > max_freq
+    key_char = char if max_freq == count
   end
-  return key_char
+  key_char
 end
 
-def decrypt_block(b, key)
-  decoded = b.bytes.map { |byt| (byt ^ key.ord).chr }
+def decrypt_block(t_block, key)
+  decoded = t_block.bytes.map { |byt| (byt ^ key.ord).chr }
   decoded.join('')
 end
 
@@ -70,20 +62,16 @@ def chunk(input, size)
 end
 
 def join_decrypted(blocks)
-  out = ""
+  out = ''
   blocks[0].length.times do |j|
-    blocks.length.times do |i|
-      if j < blocks[i].length
-        out << blocks[i][j]
-      end
-    end
+    blocks.length.times { |i| out << blocks[i][j] if j < blocks[i].length }
   end
-  return out
+  out
 end
 
-if __FILE__ == $0
-  raise "edit_distance function failed assertion" \
-    unless edit_distance("this is a test", "wokka wokka!!!") == 37
+if __FILE__ == $PROGRAM_NAME
+  raise 'edit_distance function failed assertion' \
+    unless edit_distance('this is a test', 'wokka wokka!!!') == 37
 
   b64_str = File.readlines('6.txt', chomp: true).join('')
   encoded = Base64.decode64(b64_str)
@@ -96,7 +84,7 @@ if __FILE__ == $0
     blocks[0...-2].each_with_index do |b, i|
       dists.push(edit_distance(b, blocks[i + 1]).to_f / keysize)
     end
-    key_dists.push({:k => keysize, :avg => dists.reduce(:+) / dists.size})
+    key_dists.push({ k: keysize, avg: dists.reduce(:+) / dists.size })
   end
   key_dists.sort_by! { |r| r[:avg] }
 
@@ -104,7 +92,7 @@ if __FILE__ == $0
   ks = key_dists[0][:k]
   blocks = chunk(encoded, ks)
   transposed = transpose_blocks(blocks, ks)
-  key = ""
+  key = ''
   transposed.each { |t| key << check_xor(t.bytes) }
   puts "KEY: '#{key}'"
   decrypted = []
