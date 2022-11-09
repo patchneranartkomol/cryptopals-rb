@@ -1,18 +1,18 @@
+# frozen_string_literal: true
+
 $max_score = 0
-$result = ""
+$result = ''
 
 def check_message(s)
-  b = [s].pack("H*").bytes
+  b = [s].pack('H*').bytes
   ('0'..'z').each { |ch| check_xor(ch, b) }
 end
 
 def check_xor(ch, b)
   decoded = b.map { |x| (x ^ ch.ord).chr }
   count = 0
-  decoded.each do |x|  
-    if "ETAOIN SHRDLUetaoinshrdlu".include? x
-      count += 1
-    end
+  decoded.each do |x|
+    count += 1 if 'ETAOIN SHRDLUetaoinshrdlu'.include? x
   end
   if count > $max_score
     $max_score = count
@@ -21,7 +21,7 @@ def check_xor(ch, b)
   decoded_str = decoded.join('')
 end
 
-if __FILE__ == $0
+if __FILE__ == $PROGRAM_NAME
   File.readlines('4.txt').each do |line|
     check_message(line)
   end
