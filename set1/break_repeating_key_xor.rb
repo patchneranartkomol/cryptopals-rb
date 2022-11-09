@@ -1,3 +1,6 @@
+## Implementation of Break repeating-key XOR
+# https://cryptopals.com/sets/1/challenges/6
+
 require "base64"
 
 def edit_distance(s, t)
@@ -44,6 +47,7 @@ def check_xor(b)
     decoded = b.map { |x| (x ^ char.ord).chr }
     count = 0
     decoded.each do |c|
+      # Check most common English letters. Matches better than [[:alpha]] chars.
       if "ETAOIN SHRDLUWetaoinshrdluw".include? c
         count += 1
       end
@@ -56,12 +60,30 @@ def check_xor(b)
   return key_char
 end
 
+def decrypt_block(b, key)
+  decoded = b.bytes.map { |byt| (byt ^ key.ord).chr }
+  decoded.join('')
+end
+
 def chunk(input, size)
   input.chars.each_slice(size).map(&:join)
 end
 
+def join_decrypted(blocks)
+  out = ""
+  blocks[0].length.times do |j|
+    blocks.length.times do |i|
+      if j < blocks[i].length
+        out << blocks[i][j]
+      end
+    end
+  end
+  return out
+end
+
 if __FILE__ == $0
-  raise "edit_distance function failed assertion" unless edit_distance("this is a test", "wokka wokka!!!") == 37
+  raise "edit_distance function failed assertion" \
+    unless edit_distance("this is a test", "wokka wokka!!!") == 37
 
   b64_str = File.readlines('6.txt', chomp: true).join('')
   encoded = Base64.decode64(b64_str)
@@ -84,5 +106,10 @@ if __FILE__ == $0
   transposed = transpose_blocks(blocks, ks)
   key = ""
   transposed.each { |t| key << check_xor(t.bytes) }
-  puts "The key is: '#{key}'"
+  puts "KEY: '#{key}'"
+  decrypted = []
+  key.length.times do |i|
+    decrypted.push(decrypt_block(transposed[i], key[i]))
+  end
+  puts "Decrypted output:\n#{join_decrypted(decrypted)}"
 end
