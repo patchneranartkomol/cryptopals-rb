@@ -1,6 +1,5 @@
 ## Implementation of Break repeating-key XOR
 # https://cryptopals.com/sets/1/challenges/6
-# frozen_string_literal: true
 
 require 'base64'
 
